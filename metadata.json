@@ -1,0 +1,5 @@
+{
+  "name": "React Three Fiber Game Engine",
+  "description": "A modular and scalable game engine foundation for creating 3D and 2D games on the web, built with React, Three.js, React Three Fiber, and Rapier for physics. It features an entity-component-system (ECS) like architecture.",
+  "requestFramePermissions": []
+}
