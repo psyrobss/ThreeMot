@@ -2,7 +2,7 @@ import { useContext, useEffect, useCallback, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { EngineContext } from './core';
-import { useInteraction } from './interaction.tsx';
+import { useInteraction } from './interaction';
 import type { InputManager, PlayerMovementProps, PlayerInteractionProps, InteractableData } from './types';
 
 // Hook to easily access the engine's context from any component
