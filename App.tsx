@@ -7,8 +7,10 @@ import { Selection, EffectComposer, Outline } from '@react-three/postprocessing'
 
 // Engine systems and components
 import { Engine, EngineGameLoop } from './engine/Engine';
-import { CameraManager } from './engine/camera';
-import { useEditor } from './engine/editor';
+import { CameraManager } from './engine/camera.tsx';
+import { useEditor } from './engine/editor.tsx';
+import type { SceneObject, PrimitiveType } from './engine/types';
+
 
 // UI Components
 import { GameUI } from './components/GameUI';
@@ -20,6 +22,8 @@ import { Wall } from './components/scene/Wall';
 import { Player } from './components/scene/Player';
 import { SpinningCube } from './components/scene/SpinningCube';
 import { StaticBox } from './components/scene/StaticBox';
+import { Primitive } from './components/scene/Primitive';
+
 
 // --- Core App Structure ---
 
@@ -46,9 +50,40 @@ const EngineSystems = ({ children }: { children: React.ReactNode}) => {
     )
 }
 
+// A helper function to map a SceneObject from state to a renderable component
+const renderSceneObject = (obj: SceneObject) => {
+    // We attach the unique ID to the userData of the root object for later identification
+    const passThroughProps = {
+        key: obj.uuid,
+        name: obj.name,
+        // Pass all properties from the data object to the component
+        ...obj.props,
+        // This is crucial for linking the THREE.Object3D back to our state object
+        userData: { uuid: obj.uuid } 
+    };
+
+    switch (obj.type) {
+        case 'spinningCube':
+            return <SpinningCube {...passThroughProps} />;
+        case 'staticBox':
+            return <StaticBox {...passThroughProps} />;
+        case 'cube':
+        case 'sphere':
+             // FIX: Changed prop from `shape` to `primitiveShape` to match the updated Primitive component interface.
+             return <Primitive primitiveShape={obj.type as PrimitiveType} {...passThroughProps} />;
+        default:
+            return null;
+    }
+}
+
 // Renders the 3D scene content and manages camera/player based on editor mode
 const SceneContent = () => {
-    const { isPlayMode, selectedObject, setSelectedObject, transformMode, incrementRevision } = useEditor();
+    const { 
+        isPlayMode, 
+        selectedObject, setSelectedObject, 
+        transformMode, syncObjectTransformFrom3D,
+        sceneObjects 
+    } = useEditor();
 
     const handleSelect = (e: import('@react-three/fiber').ThreeEvent<MouseEvent>) => {
         if (isPlayMode) return;
@@ -59,22 +94,20 @@ const SceneContent = () => {
         
         // Traverse up the scene graph from the clicked object
         while (current) {
-            if (current.name.endsWith('_Root')) {
+            // Select the object that has our UUID in its userData
+            if (current.userData.uuid) {
                 entityRoot = current; // Found the entity root
                 break;
             }
             current = current.parent;
         }
         
-        // Only select valid entity roots. If the user clicks on something
-        // that isn't part of an entity (like the sky), nothing will be selected.
         setSelectedObject(entityRoot);
     }
     
     return (
         <Selection>
             <EffectComposer multisampling={8} autoClear={false}>
-                {/* FIX: Changed visibleEdgeColor from string "white" to number 0xffffff to fix type error. */}
                 <Outline blur visibleEdgeColor={0xffffff} edgeStrength={100} width={1000} />
             </EffectComposer>
 
@@ -94,27 +127,24 @@ const SceneContent = () => {
                 <TransformControls 
                     object={selectedObject} 
                     mode={transformMode} 
-                    // This ensures the inspector updates in real-time while dragging the gizmo
-                    onObjectChange={incrementRevision} 
+                    onMouseUp={() => syncObjectTransformFrom3D(selectedObject)}
                 />
             )}
 
             {/* In Editor mode, enable free-look OrbitControls */}
-            {/* The gizmo can interfere with OrbitControls, so we disable controls while transforming */}
             {!isPlayMode && <OrbitControls makeDefault />}
 
             <Physics gravity={[0, -20, 0]}>
                 <Suspense fallback={null}>
                     {/* Wrap scene objects in a group to handle deselection */}
                     <group onClick={handleSelect}>
-                        {/* Static world geometry */}
+                        {/* Static, non-editable world geometry */}
                         <Floor />
-                        <SpinningCube/>
-                        <StaticBox name="InteractBox_1" position={[-5, 0.5, 5]} />
-                        <StaticBox name="InteractBox_2" position={[-5, 1.5, 5]} />
-                        <StaticBox name="StaticBox_1" position={[0, 0.5, -8]} />
                         <Wall name="BackWall" position={[0, 2.5, -15]} args={[20, 5, 1]} />
                         <Wall name="LeftWall" position={[-10, 2.5, -5]} args={[1, 5, 20]} />
+                        
+                        {/* Render editable objects from state */}
+                        {sceneObjects.map(renderSceneObject)}
                     </group>
                     
                     {/* In Play mode, spawn the player */}
@@ -133,12 +163,8 @@ const UIController = () => {
     useEffect(() => {
         const canvas = gl.domElement;
         const handlePointerLockChange = () => {
-          // If pointer lock is lost while in play mode (e.g. user presses ESC), exit play mode
           if (document.pointerLockElement !== canvas && isPlayMode) {
-            // This part is commented out as direct state change from here can be tricky.
-            // A more robust solution would involve a global event bus.
-            // For now, the user can press the Stop button.
-            // setIsPlayMode(false);
+            // Future improvement: use a global event bus to exit play mode on ESC
           }
         };
 
@@ -173,10 +199,8 @@ function App() {
       <Canvas 
         shadows 
         camera={{ position: [10, 10, 15], fov: 60 }}
-        // In editor mode, onPointerMissed is used to deselect objects
         onPointerMissed={() => !isPlayMode && setSelectedObject(null)}
       >
-        {/* EngineSystems now correctly lives inside the Canvas */}
         <EngineSystems>
           <SceneContent />
         </EngineSystems>

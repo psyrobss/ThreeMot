@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import type { RapierRigidBody } from '@react-three/rapier';
-import { useCamera } from '../../engine/camera';
+import { useCamera } from '../../engine/camera.tsx';
 import { PlayerController } from '../../engine/components';
 
 export const Player = () => {

@@ -2,8 +2,8 @@ import React, { useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { EngineContext } from './core';
 import { useInputManager, useEngine } from './hooks';
-import { InteractionProvider } from './interaction';
-import { EditorProvider } from './editor';
+import { InteractionProvider } from './interaction.tsx';
+import { EditorProvider } from './editor.tsx';
 import type { Script } from './types';
 
 interface EngineProviderProps {

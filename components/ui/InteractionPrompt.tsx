@@ -1,5 +1,5 @@
 import React from 'react';
-import { useInteraction } from '../../engine/interaction';
+import { useInteraction } from '../../engine/interaction.tsx';
 
 export const InteractionPrompt = () => {
     const { activeInteractable } = useInteraction();

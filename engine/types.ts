@@ -88,15 +88,50 @@ export interface InteractionContextType {
 // --- Editor System Types ---
 export type TransformMode = 'translate' | 'rotate' | 'scale';
 
+// The types of primitive shapes that can be created
+export type PrimitiveType = 'cube' | 'sphere';
+
+// A data structure to describe any object in the scene that can be manipulated by the editor
+export interface SceneObject {
+    uuid: string;
+    type: string; // e.g., 'staticBox', 'spinningCube', or a primitive type like 'cube'
+    name: string;
+    // We use a flexible props object to hold transform and other component-specific data
+    props: {
+        position: [number, number, number];
+        rotation: [number, number, number];
+        scale: [number, number, number];
+        // Component-specific properties
+        color?: string;
+        speed?: number;
+        [key: string]: any; // Allows for other props like 'args', etc.
+    };
+}
+
+
 export interface EditorContextType {
     isPlayMode: boolean;
     setIsPlayMode: React.Dispatch<React.SetStateAction<boolean>>;
+    
+    // The actual THREE.Object3D selected in the scene
     selectedObject: THREE.Object3D | null;
     setSelectedObject: React.Dispatch<React.SetStateAction<THREE.Object3D | null>>;
+    
+    // The data representation of the selected object, derived from sceneObjects
+    selectedSceneObject: SceneObject | null;
+
     scene: THREE.Scene | null;
     setScene: React.Dispatch<React.SetStateAction<THREE.Scene | null>>;
+    
     transformMode: TransformMode;
     setTransformMode: React.Dispatch<React.SetStateAction<TransformMode>>;
-    revision: number;
-    incrementRevision: () => void;
+    
+    // New state and functions for data-driven scene management
+    sceneObjects: SceneObject[];
+    setSceneObjects: React.Dispatch<React.SetStateAction<SceneObject[]>>;
+    createObject: (type: PrimitiveType) => void;
+
+    // New functions for a more robust data-driven workflow
+    updateObject: (uuid: string, newProps: Partial<SceneObject['props']>) => void;
+    syncObjectTransformFrom3D: (object: THREE.Object3D) => void;
 }

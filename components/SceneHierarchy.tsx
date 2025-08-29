@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import * as THREE from 'three';
-import { useEditor } from '../../engine/editor';
+import { useEditor } from '../../engine/editor.tsx';
 
 interface HierarchyItemProps {
   object: THREE.Object3D;
